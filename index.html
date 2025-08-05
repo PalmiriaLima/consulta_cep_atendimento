@@ -2,150 +2,182 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Verificador de CEP - Raio 70km</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consulta de CEP - Culligan</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    /* Mapa e body ocupam toda a tela */
     html, body {
       height: 100%;
       margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
+      font-family: 'Arial', sans-serif;
+      background-color: #f1f1f1;
     }
-    body {
+
+    .header {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
       display: flex;
-      flex-direction: column;
-      /* limitar largura do conteúdo texto, mas permitir mapa full */
-      max-width: 600px;
-      margin: auto;
-      height: 100vh;
+      align-items: center;
+      justify-content: space-between;
+      background-color: white;
+      padding: 10px 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      z-index: 999;
     }
-    /* Área do texto acima do mapa */
-    header {
-      padding: 20px;
-      box-sizing: border-box;
-      background: #fff;
-      z-index: 1000;
+
+    .header img {
+      height: 50px;
     }
-    input, button {
+
+    .search {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .search input {
       padding: 10px;
-      margin-top: 10px;
-      width: 100%;
-      box-sizing: border-box;
-      font-size: 1rem;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      width: 180px;
     }
-    .resultado {
-      margin-top: 20px;
-      font-weight: bold;
-      min-height: 1.5em;
+
+    .search button {
+      padding: 10px 16px;
+      font-size: 16px;
+      background-color: #0070c0;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
     }
-    /* Mapa ocupa todo o espaço disponível após header */
+
     #map {
-      flex-grow: 1;
       width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .show-all-btn {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 20px;
+      background-color: #0070c0;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 999;
     }
   </style>
-
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 </head>
 <body>
-  <header>
-    <h2>Verificador de Distância por CEP</h2>
-    <p>Digite um CEP para saber se ele está dentro de um raio de 70 km a partir do ponto de partida DAZU PURIFICADORES.</p>
-
-    <input type="text" id="cep" placeholder="Digite o CEP (somente números ou com hífen)" />
-    <button onclick="verificarDistancia()">Verificar</button>
-
-    <div class="resultado" id="resultado"></div>
-  </header>
+  <div class="header">
+    <img src="https://culligan.com.br/wp-content/uploads/2024/11/logomarca-culligan.png" alt="Logo Culligan" />
+    <div class="search">
+      <input type="text" id="cep" placeholder="Digite seu CEP" />
+      <button onclick="buscarCEP()">Buscar</button>
+    </div>
+  </div>
 
   <div id="map"></div>
+  <button class="show-all-btn" onclick="mostrarTodos()">Ver todos os pontos disponíveis</button>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    // Coordenadas do ponto DAZU PURIFICADORES (atualmente Fortaleza, pode ajustar)
-    const coordDazu = [-3.7304512, -38.5217989];
+    const centro = [-3.7327, -38.5270]; // Fortaleza
+    const raio = 70000; // 70km em metros
 
-    // Inicializa mapa centralizado no ponto DAZU PURIFICADORES
-    const map = L.map('map').setView(coordDazu, 9);
+    const map = L.map('map').setView(centro, 11);
 
-    // Tile layer OSM
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // Círculo de 70km em azul claro
-    const circle = L.circle(coordDazu, {
-      color: 'blue',
-      fillColor: '#a3caff',
-      fillOpacity: 0.3,
-      radius: 70000
+    const circle = L.circle(centro, {
+      color: '#0070c0',
+      fillColor: '#0070c0',
+      fillOpacity: 0.2,
+      radius: raio
     }).addTo(map);
 
-    // Marcador ponto de partida com texto alterado para "DAZU PURIFICADORES"
-    L.marker(coordDazu).addTo(map).bindPopup("DAZU PURIFICADORES").openPopup();
+    const pontos = [
+      { nome: "Autorizada A", lat: -3.722, lng: -38.523 },
+      { nome: "Autorizada B", lat: -3.752, lng: -38.537 },
+      { nome: "Autorizada C", lat: -3.742, lng: -38.507 }
+    ];
 
-    async function verificarDistancia() {
-      const cep = document.getElementById('cep').value.trim();
-      const resultado = document.getElementById('resultado');
-      resultado.innerHTML = 'Consultando...';
+    const markers = [];
 
-      try {
-        const viaCep = await fetch(`https://viacep.com.br/ws/${cep.replace('-', '')}/json/`);
-        const dadosCep = await viaCep.json();
+    function mostrarTodos() {
+      markers.forEach(m => map.removeLayer(m));
+      pontos.forEach(p => {
+        const marker = L.marker([p.lat, p.lng]).addTo(map).bindPopup(p.nome);
+        markers.push(marker);
+      });
+    }
 
-        if (dadosCep.erro) throw new Error('CEP inválido.');
-
-        const endereco = `${dadosCep.logradouro || ''}, ${dadosCep.localidade}, ${dadosCep.uf}`;
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}`);
-        const data = await response.json();
-
-        if (!data || data.length === 0) throw new Error('Coordenadas não encontradas para este CEP.');
-
-        const lat = parseFloat(data[0].lat);
-        const lon = parseFloat(data[0].lon);
-
-        const distancia = calcularDistancia(coordDazu[0], coordDazu[1], lat, lon);
-
-        // Remove marcadores anteriores para não poluir o mapa
-        map.eachLayer(layer => {
-          if (layer instanceof L.Marker && !layer._popup._content.includes("DAZU PURIFICADORES")) {
-            map.removeLayer(layer);
-          }
-        });
-
-        L.marker([lat, lon])
-          .addTo(map)
-          .bindPopup(`CEP ${cep}<br>${distancia.toFixed(1)} km de DAZU PURIFICADORES`)
-          .openPopup();
-
-        map.setView([lat, lon], 10);
-
-        if (distancia <= 70) {
-          resultado.innerHTML = `✅ O CEP ${cep} está a aproximadamente ${distancia.toFixed(1)} km de DAZU PURIFICADORES (dentro da área atendida).`;
-        } else {
-          resultado.innerHTML = `❌ O CEP ${cep} está a aproximadamente ${distancia.toFixed(1)} km de DAZU PURIFICADORES (fora da área atendida).`;
-        }
-
-      } catch (err) {
-        resultado.innerHTML = `Erro: ${err.message}`;
+    function buscarCEP() {
+      const cep = document.getElementById("cep").value.replace(/\D/g, '');
+      if (cep.length !== 8) {
+        alert("Digite um CEP válido com 8 dígitos.");
+        return;
       }
+
+      fetch(`https://viacep.com.br/ws/${cep}/json/`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.erro) {
+            alert("CEP não encontrado.");
+            return;
+          }
+
+          const endereco = `${data.localidade}, ${data.uf}, ${data.cep}`;
+          return fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}`);
+        })
+        .then(res => res?.json())
+        .then(result => {
+          if (!result || result.length === 0) {
+            alert("Não foi possível localizar este CEP.");
+            return;
+          }
+
+          const lat = parseFloat(result[0].lat);
+          const lon = parseFloat(result[0].lon);
+          const distancia = calcularDistancia(centro[0], centro[1], lat, lon);
+
+          const marcador = L.marker([lat, lon]).addTo(map)
+            .bindPopup(`CEP: ${document.getElementById("cep").value}<br>${distancia <= raio ? "✅ Dentro da área de cobertura" : "❌ Fora da área"}`)
+            .openPopup();
+
+          map.setView([lat, lon], 13);
+        })
+        .catch(() => {
+          alert("Erro ao buscar CEP.");
+        });
     }
 
     function calcularDistancia(lat1, lon1, lat2, lon2) {
-      const R = 6371;
+      const R = 6371000;
+      const toRad = v => v * Math.PI / 180;
       const dLat = toRad(lat2 - lat1);
       const dLon = toRad(lon2 - lon1);
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLon / 2) ** 2;
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       return R * c;
     }
 
-    function toRad(value) {
-      return value * Math.PI / 180;
-    }
+    mostrarTodos();
   </script>
 </body>
 </html>
