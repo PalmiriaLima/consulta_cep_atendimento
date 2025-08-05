@@ -27,12 +27,6 @@
       z-index: 1000;
     }
 
-    header img {
-      max-width: 200px;
-      height: auto;
-      margin-bottom: 15px;
-    }
-
     h2 {
       margin: 0 0 10px 0;
       font-size: 1.5rem;
@@ -75,9 +69,6 @@
 </head>
 <body>
   <header>
-    <!-- Logo Culligan centralizada acima do título -->
-    <img src="https://culligan.com.br/wp-content/uploads/2024/11/logomarca-culligan.png" alt="Logo da Culligan" />
-    
     <h2>Verificador de Distância por CEP</h2>
     <p>Digite um CEP para saber se ele está dentro de um raio de 70 km a partir dos pontos de atendimento.</p>
     <input type="text" id="cep" placeholder="Digite o CEP (somente números ou com hífen)" />
@@ -114,10 +105,10 @@
 
     async function adicionarPontos() {
       for (const ponto of pontos) {
-        const viaCep = await fetch(`https://viacep.com.br/ws/${ponto.cep.replace('-', '')}/json/`);
+        const viaCep = await fetch(https://viacep.com.br/ws/${ponto.cep.replace('-', '')}/json/);
         const dadosCep = await viaCep.json();
-        const endereco = `${dadosCep.logradouro || ''}, ${dadosCep.localidade}, ${dadosCep.uf}`;
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}`);
+        const endereco = ${dadosCep.logradouro || ''}, ${dadosCep.localidade}, ${dadosCep.uf};
+        const response = await fetch(https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)});
         const data = await response.json();
         if (data.length === 0) continue;
         const lat = parseFloat(data[0].lat);
@@ -131,7 +122,7 @@
         }).addTo(map);
 
         const marker = L.marker([lat, lon]).addTo(markersGroup);
-        marker.bindPopup(`<strong>${ponto.nome}</strong><br>CEP: ${ponto.cep}`);
+        marker.bindPopup(<strong>${ponto.nome}</strong><br>CEP: ${ponto.cep});
       }
     }
 
@@ -143,10 +134,10 @@
       resultado.innerHTML = 'Consultando...';
 
       try {
-        const viaCep = await fetch(`https://viacep.com.br/ws/${cep.replace('-', '')}/json/`);
+        const viaCep = await fetch(https://viacep.com.br/ws/${cep.replace('-', '')}/json/);
         const dadosCep = await viaCep.json();
-        const endereco = `${dadosCep.logradouro || ''}, ${dadosCep.localidade}, ${dadosCep.uf}`;
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}`);
+        const endereco = ${dadosCep.logradouro || ''}, ${dadosCep.localidade}, ${dadosCep.uf};
+        const response = await fetch(https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)});
         const data = await response.json();
         if (data.length === 0) throw new Error('Coordenadas não encontradas para este CEP.');
 
@@ -172,14 +163,14 @@
         }
 
         L.marker([lat, lon]).addTo(map)
-          .bindPopup(`CEP ${cep}<br>${dentro ? "✅ Dentro da área atendida" : "❌ Fora da área"}<br>Ponto mais próximo:<br>${pontoMaisProximo}`)
+          .bindPopup(CEP ${cep}<br>${dentro ? "✅ Dentro da área atendida" : "❌ Fora da área"}<br>Ponto mais próximo:<br>${pontoMaisProximo})
           .openPopup();
 
         map.setView([lat, lon], 10);
-        resultado.innerHTML = `${dentro ? "✅" : "❌"} O CEP ${cep} está ${dentro ? "dentro" : "fora"} da área atendida.`;
+        resultado.innerHTML = ${dentro ? "✅" : "❌"} O CEP ${cep} está ${dentro ? "dentro" : "fora"} da área atendida.;
 
       } catch (err) {
-        resultado.innerHTML = `Erro: ${err.message}`;
+        resultado.innerHTML = Erro: ${err.message};
       }
     }
 
@@ -207,4 +198,4 @@
     }
   </script>
 </body>
-</
+</html>
