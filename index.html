@@ -1,10 +1,15 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <title>Verificador de CEP - Raio 70km</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<header>
+  <img src="https://culligan.com.br/wp-content/uploads/2024/11/logomarca-culligan.png" alt="Logo da Culligan" style="max-width: 200px; height: auto; margin-bottom: 10px;" />
+  <h2>Verificador de Distância por CEP</h2>
+  <p>Digite um CEP para saber se ele está dentro de um raio de 70 km a partir dos pontos de atendimento.</p>
+  <input type="text" id="cep" placeholder="Digite o CEP (somente números ou com hífen)" />
+  <button onclick="verificarDistancia()">Verificar Cobertura</button>
+  <button onclick="verTodosPontos()">Ver todos os pontos disponíveis</button>
+  <div class="resultado" id="resultado"></div>
+</header>
+
   <style>
     html, body {
       height: 100%;
@@ -199,3 +204,4 @@
   </script>
 </body>
 </html>
+
