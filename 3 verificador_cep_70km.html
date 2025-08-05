@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consulta de CEP - Culligan</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: 'Arial', sans-serif;
+      background-color: #f1f1f1;
+    }
+
+    .header {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: white;
+      padding: 10px 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      z-index: 999;
+    }
+
+    .header img {
+      height: 50px;
+    }
+
+    .search {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .search input {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      width: 180px;
+    }
+
+    .search button {
+      padding: 10px 16px;
+      font-size: 16px;
+      background-color: #0070c0;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .show-all-btn {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 20px;
+      background-color: #0070c0;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="https://culligan.com.br/wp-content/uploads/2024/11/logomarca-culligan.png" alt="Logo Culligan" />
+    <div class="search">
+      <input type="text" id="cep" placeholder="Digite seu CEP" />
+      <button onclick="buscarCEP()">Buscar</button>
+    </div>
+  </div>
+
+  <div id="map"></div>
+
+  <button class="show-all-btn" onclick="mostrarTodos()">Ver todos os pontos disponíveis</button>
+
+  <script>
+    let map;
+    let markers = [];
+    let raio = 70000; // 70 km em metros
+    let centro = { lat: -3.7327, lng: -38.5270 }; // Fortaleza
+
+    const pontosAutorizadas = [
+      { nome: "Autorizada A", lat: -3.722, lng: -38.523 },
+      { nome: "Autorizada B", lat: -3.752, lng: -38.537 },
+      { nome: "Autorizada C", lat: -3.742, lng: -38.507 }
+    ];
+
+    function initMap() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: centro,
+        zoom: 11,
+        fullscreenControl: false,
+        streetViewControl: false
+      });
+
+      // Círculo de cobertura
+      new google.maps.Circle({
+        strokeColor: "#0070c0",
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: "#0070c0",
+        fillOpacity: 0.2,
+        map,
+        center: centro,
+        radius: raio
+      });
+
+      mostrarTodos();
+    }
+
+    function mostrarTodos() {
+      clearMarkers();
+      pontosAutorizadas.forEach(ponto => {
+        const marker = new google.maps.Marker({
+          position: { lat: ponto.lat, lng: ponto.lng },
+          map: map,
+          title: ponto.nome
+        });
+        markers.push(marker);
+      });
+    }
+
+    function clearMarkers() {
+      markers.forEach(m => m.setMap(null));
+      markers = [];
+    }
+
+    function buscarCEP() {
+      const cep = document.getElementById("cep").value.replace(/\D/g, "");
+      if (cep.length !== 8) {
+        alert("Digite um CEP válido com 8 dígitos.");
+        return;
+      }
+
+      fetch(`https://viacep.com.br/ws/${cep}/json/`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.erro) {
+            alert("CEP não encontrado.");
+            return;
+          }
+
+          const endereco = `${data.logradouro}, ${data.localidade}, ${data.uf}`;
+          const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(endereco)}&key=SUA_CHAVE_API`;
+
+          fetch(url)
+            .then(response => response.json())
+            .then(geo => {
+              if (geo.status === "OK") {
+                const location = geo.results[0].geometry.location;
+                const distancia = calcularDistancia(centro.lat, centro.lng, location.lat, location.lng);
+
+                if (distancia <= raio) {
+                  alert("CEP dentro da área de cobertura!");
+                  map.setCenter(location);
+                  map.setZoom(13);
+                } else {
+                  alert("Fora da área de cobertura.");
+                  map.setCenter(location);
+                  map.setZoom(12);
+                }
+              } else {
+                alert("Não foi possível localizar o endereço.");
+              }
+            });
+        });
+    }
+
+    function calcularDistancia(lat1, lon1, lat2, lon2) {
+      function toRad(x) {
+        return x * Math.PI / 180;
+      }
+
+      const R = 6371000; // raio da Terra em metros
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+  </script>
+
+  <script async
+    src="https://maps.googleapis.com/maps/api/js?key=SUA_CHAVE_API&callback=initMap">
+  </script>
+</body>
+</html>
+
